@@ -1,0 +1,16 @@
+[package]
+name    = "postino"
+version = "0.1.0"
+authors = ["meh. <meh@schizofreni.co>"]
+
+[dependencies]
+clap = "2"
+json = "0.10"
+
+futures         = "0.1"
+futures-cpupool = "0.1"
+num_cpus        = "1.0"
+
+mailbox = "0.1"
+fs2     = "0.2"
+notify  = "2.0"
