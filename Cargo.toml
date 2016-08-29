@@ -1,7 +1,9 @@
 [package]
 name    = "postino"
 version = "0.1.0"
+
 authors = ["meh. <meh@schizofreni.co>"]
+license = "WTFPL"
 
 [dependencies]
 clap = "2"

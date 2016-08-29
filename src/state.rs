@@ -1,3 +1,17 @@
+//            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+//                    Version 2, December 2004
+//
+// Copyleft (ↄ) meh. <meh@schizofreni.co> | http://meh.schizofreni.co
+//
+// Everyone is permitted to copy and distribute verbatim or modified
+// copies of this license document, and changing it is allowed as long
+// as the name is changed.
+//
+//            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+//   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+//
+//  0. You just DO WHAT THE FUCK YOU WANT TO.
+
 use std::io::{self, Write, Read};
 use std::path::{Path, PathBuf};
 use std::fs::File;
@@ -9,6 +23,7 @@ pub struct State {
 }
 
 impl State {
+	/// Open the state file clearing any previously existing one.
 	pub fn open<P: AsRef<Path>>(path: P) -> io::Result<Self> {
 		let     path = path.as_ref().to_path_buf();
 		let mut file = try!(File::create(&path));
@@ -19,6 +34,7 @@ impl State {
 		})
 	}
 
+	/// Update the state for the given path.
 	pub fn update<P: AsRef<Path>>(&mut self, path: P, status: Status) -> io::Result<()> {
 		let mut state = {
 			let mut file = try!(File::open(&self.path));
