@@ -16,7 +16,7 @@ use std::fs::File;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use mailbox::mail;
+use mailbox::{mail, header};
 use fs2::FileExt;
 
 #[derive(Debug)]
@@ -67,34 +67,40 @@ impl MBox {
 
 		for mail in mail::read(&input).body(false) {
 			if let Ok(mail) = mail {
+				let mut current = header::Status::empty();
+
+				if let Some(Ok(s)) = mail.headers().get::<header::Status>() {
+					current |= s;
+				}
+
+				if let Some(Ok(s)) = mail.headers().get_from::<header::Status, _>("X-Status") {
+					current |= s;
+				}
+
 				status.total += 1;
 
-				for field in vec![mail.headers().get("Status"), mail.headers().get("X-Status")] {
-					if let Some(Ok(mail::Header::Status(s))) = field {
-						if s.contains(mail::status::SEEN) {
-							status.seen += 1;
-						}
+				if current.contains(header::status::SEEN) {
+					status.seen += 1;
+				}
 
-						if s.contains(mail::status::OLD) {
-							status.old += 1;
-						}
+				if current.contains(header::status::OLD) {
+					status.old += 1;
+				}
 
-						if s.contains(mail::status::ANSWERED) {
-							status.answered += 1;
-						}
+				if current.contains(header::status::ANSWERED) {
+					status.answered += 1;
+				}
 
-						if s.contains(mail::status::FLAGGED) {
-							status.flagged += 1;
-						}
+				if current.contains(header::status::FLAGGED) {
+					status.flagged += 1;
+				}
 
-						if s.contains(mail::status::DRAFT) {
-							status.draft += 1;
-						}
+				if current.contains(header::status::DRAFT) {
+					status.draft += 1;
+				}
 
-						if s.contains(mail::status::DELETED) {
-							status.deleted += 1;
-						}
-					}
+				if current.contains(header::status::DELETED) {
+					status.deleted += 1;
 				}
 			}
 		}

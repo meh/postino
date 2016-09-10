@@ -20,10 +20,8 @@ use clap::{Arg, App};
 #[macro_use]
 extern crate json;
 
-extern crate futures;
-use futures::{Future, Task};
-extern crate futures_cpupool;
-use futures_cpupool::{CpuPool};
+extern crate threadpool;
+use threadpool::ThreadPool;
 extern crate num_cpus;
 
 extern crate mailbox;
@@ -64,7 +62,7 @@ fn main() {
 	let mut state = State::open(matches.value_of("STATE").unwrap()).unwrap();
 
 	// Create a threadpool to update the status for each box.
-	let pool = CpuPool::new(num_cpus::get() as u32);
+	let pool = ThreadPool::new(num_cpus::get());
 
 	// Create a file system watcher.
 	let (notify, notification) = channel();
@@ -122,13 +120,13 @@ fn main() {
 }
 
 /// Process the `MBox` in the thread pool and send status to sender.
-fn process(mbox: Arc<MBox>, pool: &CpuPool, to: Sender<(Arc<MBox>, io::Result<mbox::Status>)>) {
+fn process(mbox: Arc<MBox>, pool: &ThreadPool, to: Sender<(Arc<MBox>, io::Result<mbox::Status>)>) {
 	if !mbox.is_processing() {
 		mbox.processing(true);
 
 		// Process the mbox status in the thread pool.
-		Task::new().run(pool
-			.execute(move || (mbox.clone(), mbox.status()))
-			.then(move |res| to.send(res.unwrap()).map_err(|_| ())).boxed());
+		pool.execute(move || {
+			to.send((mbox.clone(), mbox.status())).unwrap();
+		});
 	}
 }
