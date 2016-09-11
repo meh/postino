@@ -5,6 +5,9 @@ version = "0.1.0"
 authors = ["meh. <meh@schizofreni.co>"]
 license = "WTFPL"
 
+[profile.release]
+lto = true
+
 [dependencies]
 clap = "2"
 json = "0.10"
