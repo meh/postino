@@ -16,7 +16,7 @@ use std::fs::File;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use mailbox::{mail, header};
+use mailbox::{self, header};
 use fs2::FileExt;
 
 #[derive(Debug)]
@@ -65,7 +65,7 @@ impl MBox {
 		let     input  = try!(File::open(&self.path));
 		try!(input.lock_shared());
 
-		for mail in mail::read(&input).body(false) {
+		for mail in mailbox::read(&input).body(false) {
 			if let Ok(mail) = mail {
 				let mut current = header::Status::empty();
 

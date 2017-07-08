@@ -27,13 +27,14 @@ extern crate num_cpus;
 extern crate mailbox;
 extern crate fs2;
 extern crate notify;
-use notify::{RecommendedWatcher, Watcher};
+use notify::{RecommendedWatcher, Watcher, DebouncedEvent, RecursiveMode};
 
 use std::io;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::mpsc::{Sender, channel};
 use std::path::Path;
+use std::time::Duration;
 
 mod mbox;
 use mbox::MBox;
@@ -66,7 +67,7 @@ fn main() {
 
 	// Create a file system watcher.
 	let (notify, notification) = channel();
-	let mut watcher = RecommendedWatcher::new(notify).unwrap();
+	let mut watcher = RecommendedWatcher::new(notify, Duration::from_secs(0)).unwrap();
 
 	// Create a map of mboxes.
 	let (status, update) = channel();
@@ -80,7 +81,7 @@ fn main() {
 			continue;
 		}
 
-		watcher.watch(path).unwrap();
+		watcher.watch(path, RecursiveMode::NonRecursive).unwrap();
 		boxes.insert(path.to_path_buf(), Arc::new(MBox::open(path).unwrap()));
 	}
 
@@ -93,16 +94,14 @@ fn main() {
 		select! {
 			// One of the mbox files has changed.
 			event = notification.recv() => {
-				let event = event.unwrap();
-
-				if event.path.is_none() || event.op.is_err() {
-					continue;
-				}
-
-				if event.op.unwrap().contains(notify::op::WRITE) {
-					if let Some(mbox) = boxes.get(event.path.as_ref().unwrap()) {
-						process(mbox.clone(), &pool, status.clone());
+				match event.unwrap() {
+					DebouncedEvent::Write(ref path) => {
+						if let Some(mbox) = boxes.get(path) {
+							process(mbox.clone(), &pool, status.clone());
+						}
 					}
+
+					_ => ()
 				}
 			},
 
