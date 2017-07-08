@@ -19,6 +19,7 @@ use clap::{Arg, App};
 
 #[macro_use]
 extern crate json;
+extern crate shlex;
 
 extern crate threadpool;
 use threadpool::ThreadPool;
@@ -35,6 +36,8 @@ use std::sync::Arc;
 use std::sync::mpsc::{Sender, channel};
 use std::path::Path;
 use std::time::Duration;
+use std::thread;
+use std::process::Command;
 
 mod mbox;
 use mbox::MBox;
@@ -53,11 +56,35 @@ fn main() {
 			.takes_value(true)
 			.multiple(true)
 			.help("Path to a mail box to watch."))
+		.arg(Arg::with_name("fetcher")
+			.short("f")
+			.long("fetcher")
+			.takes_value(true)
+			.help("The mail fetcher command."))
+		.arg(Arg::with_name("t")
+			.short("t")
+			.long("time")
+			.takes_value(true)
+			.help("The number of seconds to wait between each fetcher call. (default: 120)"))
 		.arg(Arg::with_name("STATE")
 			.index(1)
 			.required(true)
 			.help("The path to the state file."))
 		.get_matches();
+
+	// Spawn the fetcher thread if one was defined.
+	if let Some(mut command) = matches.value_of("fetcher").and_then(shlex::split) {
+		let args    = command.split_off(1);
+		let command = command.pop().unwrap();
+		let time    = matches.value_of("time").unwrap_or("120").parse::<u64>().unwrap();
+
+		thread::spawn(move || {
+			loop {
+				let _ = Command::new(&command).args(&args).status();
+				thread::sleep(Duration::from_secs(time));
+			}
+		});
+	}
 
 	// Create the state file.
 	let mut state = State::open(matches.value_of("STATE").unwrap()).unwrap();
